@@ -7,7 +7,7 @@ import Hero from './Hero'
 
 function HomeMain() {
   return (
-    <section className='bg-[#edb4e1]'>
+    <section className='bg-[#F6E2E9]'>
     <Navbar/>
     <Hero/>
     </section>

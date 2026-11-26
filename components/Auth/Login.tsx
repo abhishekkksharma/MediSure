@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '../Header/Navbar'
+import { useUser } from '@/context/userContext'
 
 type PortalRole = 'patient' | 'doctor' | 'admin'
 
@@ -32,6 +33,7 @@ const ROLE_META: Record<
 
 function Login() {
   const router = useRouter()
+  const { loginWithToken } = useUser()
   const [selectedRole, setSelectedRole] = useState<PortalRole>('patient')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -62,10 +64,7 @@ function Login() {
       }
 
       if (data.token) {
-        localStorage.setItem('medisure_token', data.token)
-      }
-      if (data.user) {
-        localStorage.setItem('medisure_user', JSON.stringify(data.user))
+        await loginWithToken(data.token, data.user || null)
       }
 
       setSuccess(`Welcome back, ${data.user?.name || 'User'}! Redirecting...`)

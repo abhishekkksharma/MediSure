@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '../Header/Navbar'
+import { useUser } from '@/context/userContext'
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 const GENDERS = [
@@ -16,6 +17,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 function Signup() {
   const router = useRouter()
+  const { loginWithToken } = useUser()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -71,10 +73,7 @@ function Signup() {
       }
 
       if (data.token) {
-        localStorage.setItem('medisure_token', data.token)
-      }
-      if (data.user) {
-        localStorage.setItem('medisure_user', JSON.stringify(data.user))
+        await loginWithToken(data.token, data.user || null)
       }
 
       setSuccess('Patient account created! Redirecting...')

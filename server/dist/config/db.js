@@ -10,9 +10,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
  */
 const connectDB = async () => {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/medisure';
+    const dbName = process.env.MONGO_DB_NAME || 'medisure';
     try {
-        const conn = await mongoose_1.default.connect(mongoUri);
-        console.log(`MongoDB connected: ${conn.connection.host}`);
+        const conn = await mongoose_1.default.connect(mongoUri, { dbName });
+        console.log(`MongoDB connected: ${conn.connection.host} (db: ${conn.connection.name})`);
     }
     catch (error) {
         console.error('MongoDB connection error:', error);

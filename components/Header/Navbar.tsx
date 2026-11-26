@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import React from 'react'
+import Profile from './Profile'
 
 function Navbar() {
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 w-full bg-[#edb4e1]/85 px-6 py-4 backdrop-blur-md md:px-14 md:py-5 lg:px-20">
+    <header className="fixed left-0 right-0 top-0 z-50 w-full bg-transparent px-6 py-4 backdrop-blur-xl md:px-14 md:py-5 lg:px-20">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between">
         <Link
           href="/"
@@ -25,9 +26,7 @@ function Navbar() {
           <Link href="/doctors" className="transition-opacity hover:opacity-70">
             Doctors
           </Link>
-          <Link href="/auth/login" className="transition-opacity hover:opacity-70">
-            Login
-          </Link>
+          <Profile/>
         </nav>
 
         <Link
