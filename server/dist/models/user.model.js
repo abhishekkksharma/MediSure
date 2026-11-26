@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ROLE_PERMISSIONS = exports.PERMISSIONS = exports.GENDERS = exports.BLOOD_GROUPS = exports.USER_ROLES = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const doctor_types_1 = require("../types/doctor.types");
 exports.USER_ROLES = ['patient', 'doctor', 'admin'];
 exports.BLOOD_GROUPS = [
     'A+',
@@ -118,9 +119,28 @@ const availabilitySlotSchema = new mongoose_1.Schema({
     startTime: { type: String, required: true, trim: true },
     endTime: { type: String, required: true, trim: true },
 }, { _id: false });
+const opdTimingsSchema = new mongoose_1.Schema({
+    start: { type: String, required: true, trim: true, default: '09:00' },
+    end: { type: String, required: true, trim: true, default: '17:00' },
+    label: { type: String, trim: true },
+}, { _id: false });
 const doctorProfileSchema = new mongoose_1.Schema({
+    department: {
+        type: String,
+        enum: doctor_types_1.DEPARTMENT_NAMES,
+        default: 'GeneralMedicine',
+    },
     specialization: { type: String, required: true, trim: true },
     licenseNumber: { type: String, required: true, trim: true },
+    opdTimings: {
+        type: opdTimingsSchema,
+        default: () => ({ start: '09:00', end: '17:00', label: '9:00 AM - 5:00 PM' }),
+    },
+    days: {
+        type: [String],
+        enum: doctor_types_1.WEEKDAYS,
+        default: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    },
     experienceYears: { type: Number, min: 0, default: 0 },
     qualifications: [{ type: String, trim: true }],
     consultationFee: { type: Number, min: 0, default: 0 },

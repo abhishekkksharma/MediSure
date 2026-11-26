@@ -10,7 +10,7 @@ function Navbar() {
           href="/"
           className="text-xl font-bold tracking-tight text-[#231d25] md:text-2xl"
         >
-          MediSure
+          Medi<span className='text-pink-600'>Sure</span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-[#362c38] md:flex lg:gap-10">

@@ -1,5 +1,12 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import {
+  DEPARTMENT_NAMES,
+  DepartmentName,
+  OpdTimings,
+  WEEKDAYS,
+  Weekday,
+} from '../types/doctor.types';
 
 export const USER_ROLES = ['patient', 'doctor', 'admin'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -93,8 +100,11 @@ export interface IAvailabilitySlot {
 }
 
 export interface IDoctorProfile {
+  department: DepartmentName;
   specialization: string;
   licenseNumber: string;
+  opdTimings?: OpdTimings;
+  days?: Weekday[];
   experienceYears?: number;
   qualifications?: string[];
   consultationFee?: number;
@@ -155,10 +165,33 @@ const availabilitySlotSchema = new Schema<IAvailabilitySlot>(
   { _id: false }
 );
 
+const opdTimingsSchema = new Schema<OpdTimings>(
+  {
+    start: { type: String, required: true, trim: true, default: '09:00' },
+    end: { type: String, required: true, trim: true, default: '17:00' },
+    label: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
 const doctorProfileSchema = new Schema<IDoctorProfile>(
   {
+    department: {
+      type: String,
+      enum: DEPARTMENT_NAMES,
+      default: 'GeneralMedicine',
+    },
     specialization: { type: String, required: true, trim: true },
     licenseNumber: { type: String, required: true, trim: true },
+    opdTimings: {
+      type: opdTimingsSchema,
+      default: () => ({ start: '09:00', end: '17:00', label: '9:00 AM - 5:00 PM' }),
+    },
+    days: {
+      type: [String],
+      enum: WEEKDAYS,
+      default: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    },
     experienceYears: { type: Number, min: 0, default: 0 },
     qualifications: [{ type: String, trim: true }],
     consultationFee: { type: Number, min: 0, default: 0 },

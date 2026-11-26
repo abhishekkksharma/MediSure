@@ -1,2 +1,17 @@
 @import "tailwindcss";
 
+@keyframes star-pulse-spin {
+  0% {
+    transform: rotate(0deg) scale(0.78);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.16);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.78);
+  }
+}
+
+.animate-star-loader {
+  animation: star-pulse-spin 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}

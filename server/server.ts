@@ -2,7 +2,13 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db';
+import { seedDefaultDoctors } from './seeds/doctors.seed';
+import { seedDefaultUsers } from './seeds/users.seed';
 import userRoutes from './routes/user.routes';
+import doctorRoutes from './routes/doctor.routes';
+import appointmentRoutes from './routes/appointment.routes';
+import diagnosisRoutes from './routes/diagnosis.routes';
+import bloodRequestRoutes from './routes/bloodRequest.routes';
 
 dotenv.config();
 
@@ -25,6 +31,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // API routes
 app.use('/api/users', userRoutes);
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/diagnosis', diagnosisRoutes);
+app.use('/api/blood-requests', bloodRequestRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -39,6 +49,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async (): Promise<void> => {
   await connectDB();
+  await Promise.all([seedDefaultDoctors(), seedDefaultUsers()]);
   app.listen(PORT, () => {
     console.log(`MediSure server running on http://localhost:${PORT}`);
   });
