@@ -106,6 +106,24 @@ function Profile() {
           </div>
 
           <div className="mt-2 flex flex-col gap-1 text-xs font-medium text-[#362c38]">
+            {user.role === 'admin' && (
+              <>
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-2.5 py-2 font-semibold text-[#9c326e] transition hover:bg-[#faf3f8]"
+                >
+                  Admin Panel
+                </Link>
+                <Link
+                  href="/admin/doctors/new"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-2.5 py-2 transition hover:bg-[#faf3f8]"
+                >
+                  Create Doctor
+                </Link>
+              </>
+            )}
             <Link
               href="/diagnosis"
               onClick={() => setOpen(false)}

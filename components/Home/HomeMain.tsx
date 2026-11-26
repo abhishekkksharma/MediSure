@@ -1,16 +1,19 @@
 import React from 'react'
-import Link from 'next/link'
 import Navbar from '../Header/Navbar'
 import Hero from './Hero'
-
-
+import HomeSections from './HomeSections'
+import Footer from './Footer'
 
 function HomeMain() {
   return (
-    <section className='bg-[#F6E2E9]'>
-    <Navbar/>
-    <Hero/>
-    </section>
+    <div className="flex min-h-screen flex-col">
+      <section className="bg-[#F6E2E9]">
+        <Navbar />
+        <Hero />
+      </section>
+      <HomeSections />
+      <Footer />
+    </div>
   )
 }
 

@@ -28,6 +28,45 @@ export const searchAreaDonorsService = async (params: {
   return findBloodDonorsService(params);
 };
 
+const ALL_INDIAN_STATES_AND_UTS = [
+  'Andaman and Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+];
+
 export const getDonorLocationsService = async (bloodGroup?: string) => {
   const filter: Record<string, unknown> = {
     isActive: true,
@@ -42,6 +81,10 @@ export const getDonorLocationsService = async (bloodGroup?: string) => {
   const users = await User.find(filter).select('location.state location.city');
 
   const citiesMap = new Map<string, Set<string>>();
+  for (const stateOrUt of ALL_INDIAN_STATES_AND_UTS) {
+    citiesMap.set(stateOrUt, new Set<string>());
+  }
+
   for (const u of users) {
     const state = u.location?.state?.trim();
     const city = u.location?.city?.trim();
@@ -121,7 +164,9 @@ export const createAndNotifyBloodRequestService = async (
     notifiedDonors: donors.map((d) => ({
       donor: d._id,
       email: d.email,
-      emailed: emailDelivery.configured && emailDelivery.sentCount > 0,
+      emailed:
+        emailDelivery.configured &&
+        emailDelivery.sentRecipients.includes(d.email),
     })),
   });
 

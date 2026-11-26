@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listBloodRequestsService = exports.createAndNotifyBloodRequestService = exports.searchAreaDonorsService = void 0;
+exports.listBloodRequestsService = exports.createAndNotifyBloodRequestService = exports.getDonorLocationsService = exports.searchAreaDonorsService = void 0;
 const bloodRequest_model_1 = __importStar(require("../models/bloodRequest.model"));
 const user_model_1 = __importStar(require("../models/user.model"));
 const user_service_1 = require("./user.service");
@@ -43,6 +43,78 @@ const searchAreaDonorsService = async (params) => {
     return (0, user_service_1.findBloodDonorsService)(params);
 };
 exports.searchAreaDonorsService = searchAreaDonorsService;
+const ALL_INDIAN_STATES_AND_UTS = [
+    'Andaman and Nicobar Islands',
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chandigarh',
+    'Chhattisgarh',
+    'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jammu and Kashmir',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Ladakh',
+    'Lakshadweep',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Puducherry',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
+];
+const getDonorLocationsService = async (bloodGroup) => {
+    const filter = {
+        isActive: true,
+        isBloodDonorAvailable: true,
+        'location.state': { $exists: true, $ne: '' },
+    };
+    if (bloodGroup && user_model_1.BLOOD_GROUPS.includes(bloodGroup)) {
+        filter.bloodGroup = bloodGroup;
+    }
+    const users = await user_model_1.default.find(filter).select('location.state location.city');
+    const citiesMap = new Map();
+    for (const stateOrUt of ALL_INDIAN_STATES_AND_UTS) {
+        citiesMap.set(stateOrUt, new Set());
+    }
+    for (const u of users) {
+        const state = u.location?.state?.trim();
+        const city = u.location?.city?.trim();
+        if (!state)
+            continue;
+        if (!citiesMap.has(state)) {
+            citiesMap.set(state, new Set());
+        }
+        if (city) {
+            citiesMap.get(state).add(city);
+        }
+    }
+    const states = Array.from(citiesMap.keys()).sort((a, b) => a.localeCompare(b));
+    const citiesByState = {};
+    for (const state of states) {
+        citiesByState[state] = Array.from(citiesMap.get(state)).sort((a, b) => a.localeCompare(b));
+    }
+    return { states, citiesByState };
+};
+exports.getDonorLocationsService = getDonorLocationsService;
 const createAndNotifyBloodRequestService = async (input) => {
     if (!input.bloodGroup || !user_model_1.BLOOD_GROUPS.includes(input.bloodGroup)) {
         throw new ServiceError_1.ServiceError(400, `Valid bloodGroup is required (${user_model_1.BLOOD_GROUPS.join(', ')})`);

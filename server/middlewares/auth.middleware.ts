@@ -16,6 +16,33 @@ const getJwtSecret = (): string => {
 };
 
 /**
+ * Attaches `req.user` if a valid Bearer JWT is present, without failing if absent.
+ */
+export const optionalAuthenticate = async (
+  req: AuthRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
+    const user = await User.findById(decoded.id);
+    if (user && user.isActive) {
+      req.user = user;
+    }
+  } catch {
+    // Ignore invalid optional token
+  }
+  next();
+};
+
+/**
  * Verifies the Bearer JWT and attaches the active user document to `req.user`.
  */
 export const authenticate = async (

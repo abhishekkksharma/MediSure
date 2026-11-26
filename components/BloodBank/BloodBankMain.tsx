@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Navbar from '../Header/Navbar'
 import StarLoader from '../Common/StarLoader'
 import { useUser } from '@/context/userContext'
-import { INDIA_STATES, INDIA_STATE_CITIES } from '@/data/indiaLocations'
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 const URGENCIES = [
@@ -43,6 +42,8 @@ export default function BloodBankMain() {
   const [requirements, setRequirements] = useState('')
 
   const [donors, setDonors] = useState<DonorItem[]>([])
+  const [states, setStates] = useState<string[]>([])
+  const [citiesByState, setCitiesByState] = useState<Record<string, string[]>>({})
   const [hasSearched, setHasSearched] = useState(false)
   const [searching, setSearching] = useState(false)
   const [sendingRequest, setSendingRequest] = useState(false)
@@ -53,21 +54,47 @@ export default function BloodBankMain() {
     recipients: string[]
   } | null>(null)
 
+  useEffect(() => {
+    let active = true
+
+    const fetchLocations = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/blood-requests/locations`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (!active) return
+        setStates(Array.isArray(data.states) ? data.states : [])
+        setCitiesByState(data.citiesByState || {})
+      } catch {
+        // Keep empty state list if server is unreachable
+      }
+    }
+
+    void fetchLocations()
+    return () => {
+      active = false
+    }
+  }, [])
+
   const availableCities = useMemo(() => {
     if (!stateName) return []
-    return INDIA_STATE_CITIES[stateName] || []
-  }, [stateName])
+    return citiesByState[stateName] || []
+  }, [stateName, citiesByState])
 
   useEffect(() => {
+    if (!stateName) return
+
     let active = true
 
     const fetchMatchingDonors = async () => {
       try {
-        const params = new URLSearchParams({ bloodGroup })
+        const params = new URLSearchParams({ bloodGroup, state: stateName })
         if (city) params.set('city', city)
-        if (stateName) params.set('state', stateName)
-
-        const res = await fetch(`${API_BASE_URL}/api/blood-requests/donors?${params.toString()}`)
+        const headers: Record<string, string> = {}
+        if (token) headers.Authorization = `Bearer ${token}`
+        const res = await fetch(`${API_BASE_URL}/api/blood-requests/donors?${params.toString()}`, {
+          headers,
+        })
         const data = await res.json()
         if (!active) return
 
@@ -77,6 +104,8 @@ export default function BloodBankMain() {
         }
       } catch {
         // Keep manual search available on transient network errors
+      } finally {
+        if (active) setSearching(false)
       }
     }
 
@@ -85,20 +114,28 @@ export default function BloodBankMain() {
     return () => {
       active = false
     }
-  }, [bloodGroup, stateName, city])
+  }, [bloodGroup, stateName, city, token])
 
   const handleSearchDonors = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setRequestResult(null)
+
+    if (!stateName) {
+      setError('Please select a state/UT to view matching donors.')
+      return
+    }
+
     setSearching(true)
 
     try {
-      const params = new URLSearchParams({ bloodGroup })
-      if (city.trim()) params.set('city', city.trim())
-      if (stateName.trim()) params.set('state', stateName.trim())
-
-      const res = await fetch(`${API_BASE_URL}/api/blood-requests/donors?${params.toString()}`)
+      const params = new URLSearchParams({ bloodGroup, state: stateName })
+      if (city) params.set('city', city)
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetch(`${API_BASE_URL}/api/blood-requests/donors?${params.toString()}`, {
+        headers,
+      })
       const data = await res.json()
 
       if (!res.ok) {
@@ -119,6 +156,11 @@ export default function BloodBankMain() {
   const handleSendDonorRequest = async () => {
     setError('')
     setRequestResult(null)
+
+    if (!stateName) {
+      setError('Please select a state/UT before sending a donor request.')
+      return
+    }
 
     if (!token) {
       setError('Please sign in to send an emergency blood donor request.')
@@ -265,7 +307,7 @@ export default function BloodBankMain() {
                   className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-xs text-neutral-900 outline-none focus:border-neutral-400 focus:bg-white"
                 >
                   <option value="">All States</option>
-                  {INDIA_STATES.map((st) => (
+                  {states.map((st) => (
                     <option key={st} value={st}>
                       {st}
                     </option>
@@ -403,13 +445,13 @@ export default function BloodBankMain() {
 
             {searching ? (
               <StarLoader label="Finding matching donors..." size="md" />
-            ) : !hasSearched ? (
+            ) : !stateName || !hasSearched ? (
               <div className="rounded-xl border border-dashed border-neutral-200 py-14 text-center">
                 <p className="text-sm font-medium text-neutral-700">
-                  Enter blood group and location
+                  Select a blood group and state/UT
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
-                  Click &ldquo;Find Matching Donors&rdquo; to preview available donors in that city, or send an email alert directly.
+                  Matching donors across all cities in that state/UT (or a specific city) will appear automatically.
                 </p>
               </div>
             ) : donors.length === 0 ? (

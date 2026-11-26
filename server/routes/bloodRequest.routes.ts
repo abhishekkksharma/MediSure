@@ -5,13 +5,17 @@ import {
   getDonorLocations,
   searchDonors,
 } from '../controllers/bloodRequest.controller';
-import { authenticate, requirePermission } from '../middlewares/auth.middleware';
+import {
+  authenticate,
+  optionalAuthenticate,
+  requirePermission,
+} from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Dynamic donor locations & donor search
 router.get('/locations', getDonorLocations);
-router.get('/donors', searchDonors);
+router.get('/donors', optionalAuthenticate, searchDonors);
 
 // Create a blood request and email all matching donors in the area
 router.post(
@@ -22,4 +26,7 @@ router.post(
 );
 
 // List blood requests
-router.get('/', authent
+router.get('/', authenticate, getBloodRequests);
+
+export default router;
+

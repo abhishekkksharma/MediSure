@@ -49,6 +49,7 @@ export default function AppointmentScheduleGrid({
   const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all')
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week')
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
+  const [mobileDayKey, setMobileDayKey] = useState<string>(() => toDateKey(new Date()))
 
   const todayKey = toDateKey(new Date())
 
@@ -61,9 +62,22 @@ export default function AppointmentScheduleGrid({
         key: toDateKey(d),
         dayNum: d.getDate(),
         dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        fullLabel: d.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        }),
       }
     })
   }, [weekStart])
+
+  const activeMobileDay = useMemo(() => {
+    return (
+      weekDays.find((d) => d.key === mobileDayKey) ||
+      weekDays.find((d) => d.key === todayKey) ||
+      weekDays[0]
+    )
+  }, [weekDays, mobileDayKey, todayKey])
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => {
@@ -215,86 +229,197 @@ export default function AppointmentScheduleGrid({
 
       {/* Week Grid View */}
       {viewMode === 'week' && !selectedDate ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-7">
-          {weekDays.map((day) => {
-            const isToday = day.key === todayKey
-            const dayItems = appointmentsByDay.get(day.key) || []
+        <>
+          {/* Mobile Week Strip + Focused Day Schedule */}
+          <div className="mt-4 md:hidden">
+            <div className="grid grid-cols-7 gap-1 rounded-xl border border-neutral-100 bg-neutral-50/70 p-1">
+              {weekDays.map((day) => {
+                const isSelected = day.key === activeMobileDay.key
+                const isToday = day.key === todayKey
+                const count = (appointmentsByDay.get(day.key) || []).length
 
-            return (
-              <div
-                key={day.key}
-                className="flex min-h-[260px] flex-col rounded-xl border border-neutral-100 bg-neutral-50/40 p-2"
-              >
-                <div
-                  className={`mb-2 rounded-lg px-2 py-1.5 text-center text-xs font-semibold ${
-                    isToday
-                      ? 'bg-neutral-900 text-white'
-                      : 'text-neutral-700'
-                  }`}
-                >
-                  {day.dayNum} - {day.dayName}
-                </div>
+                return (
+                  <button
+                    key={day.key}
+                    type="button"
+                    onClick={() => setMobileDayKey(day.key)}
+                    className={`flex flex-col items-center justify-center rounded-lg py-2 text-center transition ${
+                      isSelected
+                        ? 'bg-neutral-900 text-white shadow-2xs'
+                        : isToday
+                        ? 'bg-white text-neutral-900 ring-1 ring-neutral-300'
+                        : 'text-neutral-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <span className="text-[10px] font-medium opacity-75">
+                      {day.dayName.slice(0, 1)}
+                    </span>
+                    <span className="mt-0.5 text-xs font-bold">{day.dayNum}</span>
+                    <span
+                      className={`mt-1 h-1.5 w-1.5 rounded-full ${
+                        count > 0
+                          ? isSelected
+                            ? 'bg-amber-300'
+                            : 'bg-neutral-900'
+                          : 'bg-transparent'
+                      }`}
+                    />
+                  </button>
+                )
+              })}
+            </div>
 
-                <div className="flex flex-1 flex-col gap-2">
-                  {dayItems.length === 0 ? (
-                    <p className="mt-6 text-center text-[11px] text-neutral-400">—</p>
-                  ) : (
-                    dayItems.map((appt) => (
-                      <div
-                        key={appt._id}
-                        className={`rounded-xl border p-2.5 text-xs ${CARD_TONES[appt.status]}`}
-                      >
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="truncate font-semibold">
-                            {userRole === 'doctor'
-                              ? appt.patient?.name || 'Patient'
-                              : appt.doctor?.name || 'Doctor'}
-                          </span>
-                          <span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                            {appt.bookingType === 'ai_diagnosis' ? 'AI' : 'Manual'}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 truncate text-[11px] opacity-80">
-                          {DEPARTMENT_LABELS[appt.department] || appt.department}
-                        </p>
-                        <p className="mt-1 text-[10px] font-medium opacity-75">
-                          {appt.timeSlot}
-                        </p>
-
-                        <div className="mt-2 flex items-center justify-between gap-1 border-t border-black/5 pt-1.5">
-                          <span className="text-[10px] font-semibold capitalize">
-                            {appt.status}
-                          </span>
-                          {appt.status !== 'cancelled' && appt.status !== 'completed' && (
-                            <div className="flex gap-1">
-                              {(userRole === 'doctor' || userRole === 'admin') &&
-                                appt.status === 'pending' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onUpdateStatus(appt._id, 'confirmed')}
-                                    className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-2xs hover:bg-emerald-50"
-                                  >
-                                    Confirm
-                                  </button>
-                                )}
-                              <button
-                                type="button"
-                                onClick={() => onUpdateStatus(appt._id, 'cancelled')}
-                                className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 shadow-2xs hover:bg-red-50 hover:text-red-700"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+            <div className="mt-3 rounded-xl border border-neutral-100 bg-neutral-50/40 p-3">
+              <div className="mb-3 flex items-center justify-between border-b border-neutral-100 pb-2">
+                <p className="text-xs font-semibold text-neutral-900">
+                  {activeMobileDay.fullLabel}
+                </p>
+                <span className="text-[11px] text-neutral-500">
+                  {(appointmentsByDay.get(activeMobileDay.key) || []).length} appt
+                  {(appointmentsByDay.get(activeMobileDay.key) || []).length === 1 ? '' : 's'}
+                </span>
               </div>
-            )
-          })}
-        </div>
+
+              {(appointmentsByDay.get(activeMobileDay.key) || []).length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-xs text-neutral-500">No appointments for this day.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {(appointmentsByDay.get(activeMobileDay.key) || []).map((appt) => (
+                    <div
+                      key={appt._id}
+                      className={`rounded-xl border p-3 text-xs ${CARD_TONES[appt.status]}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-semibold">
+                          {userRole === 'doctor'
+                            ? appt.patient?.name || 'Patient'
+                            : appt.doctor?.name || 'Doctor'}
+                        </span>
+                        <span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                          {appt.bookingType === 'ai_diagnosis' ? 'AI' : 'Manual'}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[11px] opacity-80">
+                        {DEPARTMENT_LABELS[appt.department] || appt.department} · {appt.timeSlot}
+                      </p>
+
+                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/5 pt-2">
+                        <span className="text-[10px] font-semibold capitalize">
+                          {appt.status}
+                        </span>
+                        {appt.status !== 'cancelled' && appt.status !== 'completed' && (
+                          <div className="flex gap-1.5">
+                            {(userRole === 'doctor' || userRole === 'admin') &&
+                              appt.status === 'pending' && (
+                                <button
+                                  type="button"
+                                  onClick={() => onUpdateStatus(appt._id, 'confirmed')}
+                                  className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-emerald-700 shadow-2xs hover:bg-emerald-50"
+                                >
+                                  Confirm
+                                </button>
+                              )}
+                            <button
+                              type="button"
+                              onClick={() => onUpdateStatus(appt._id, 'cancelled')}
+                              className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-neutral-700 shadow-2xs hover:bg-red-50 hover:text-red-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop 7-Column Week Grid */}
+          <div className="mt-4 hidden grid-cols-7 gap-3 md:grid">
+            {weekDays.map((day) => {
+              const isToday = day.key === todayKey
+              const dayItems = appointmentsByDay.get(day.key) || []
+
+              return (
+                <div
+                  key={day.key}
+                  className="flex min-h-[260px] flex-col rounded-xl border border-neutral-100 bg-neutral-50/40 p-2"
+                >
+                  <div
+                    className={`mb-2 rounded-lg px-2 py-1.5 text-center text-xs font-semibold ${
+                      isToday
+                        ? 'bg-neutral-900 text-white'
+                        : 'text-neutral-700'
+                    }`}
+                  >
+                    {day.dayNum} - {day.dayName}
+                  </div>
+
+                  <div className="flex flex-1 flex-col gap-2">
+                    {dayItems.length === 0 ? (
+                      <p className="mt-6 text-center text-[11px] text-neutral-400">—</p>
+                    ) : (
+                      dayItems.map((appt) => (
+                        <div
+                          key={appt._id}
+                          className={`rounded-xl border p-2.5 text-xs ${CARD_TONES[appt.status]}`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="truncate font-semibold">
+                              {userRole === 'doctor'
+                                ? appt.patient?.name || 'Patient'
+                                : appt.doctor?.name || 'Doctor'}
+                            </span>
+                            <span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                              {appt.bookingType === 'ai_diagnosis' ? 'AI' : 'Manual'}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 truncate text-[11px] opacity-80">
+                            {DEPARTMENT_LABELS[appt.department] || appt.department}
+                          </p>
+                          <p className="mt-1 text-[10px] font-medium opacity-75">
+                            {appt.timeSlot}
+                          </p>
+
+                          <div className="mt-2 flex items-center justify-between gap-1 border-t border-black/5 pt-1.5">
+                            <span className="text-[10px] font-semibold capitalize">
+                              {appt.status}
+                            </span>
+                            {appt.status !== 'cancelled' && appt.status !== 'completed' && (
+                              <div className="flex gap-1">
+                                {(userRole === 'doctor' || userRole === 'admin') &&
+                                  appt.status === 'pending' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onUpdateStatus(appt._id, 'confirmed')}
+                                      className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-2xs hover:bg-emerald-50"
+                                    >
+                                      Confirm
+                                    </button>
+                                  )}
+                                <button
+                                  type="button"
+                                  onClick={() => onUpdateStatus(appt._id, 'cancelled')}
+                                  className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 shadow-2xs hover:bg-red-50 hover:text-red-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       ) : (
         /* List View (or filtered by specific calendar date) */
         <div className="mt-4 space-y-2.5">

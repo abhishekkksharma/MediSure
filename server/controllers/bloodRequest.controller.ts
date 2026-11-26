@@ -2,10 +2,27 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import {
   createAndNotifyBloodRequestService,
+  getDonorLocationsService,
   listBloodRequestsService,
   searchAreaDonorsService,
 } from '../services/bloodRequest.service';
 import { handleControllerError } from '../utils/errorHandler';
+
+/**
+ * GET /api/blood-requests/locations
+ * Returns distinct states and cities from active blood donors in MongoDB.
+ */
+export const getDonorLocations = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bloodGroup } = req.query;
+    const result = await getDonorLocationsService(
+      typeof bloodGroup === 'string' ? bloodGroup : undefined
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    handleControllerError(res, error, 'Failed to fetch donor locations');
+  }
+};
 
 /**
  * GET /api/blood-requests/donors

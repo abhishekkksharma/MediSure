@@ -1,8 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBloodRequests = exports.createBloodRequest = exports.searchDonors = void 0;
+exports.getBloodRequests = exports.createBloodRequest = exports.searchDonors = exports.getDonorLocations = void 0;
 const bloodRequest_service_1 = require("../services/bloodRequest.service");
 const errorHandler_1 = require("../utils/errorHandler");
+/**
+ * GET /api/blood-requests/locations
+ * Returns distinct states and cities from active blood donors in MongoDB.
+ */
+const getDonorLocations = async (req, res) => {
+    try {
+        const { bloodGroup } = req.query;
+        const result = await (0, bloodRequest_service_1.getDonorLocationsService)(typeof bloodGroup === 'string' ? bloodGroup : undefined);
+        res.status(200).json(result);
+    }
+    catch (error) {
+        (0, errorHandler_1.handleControllerError)(res, error, 'Failed to fetch donor locations');
+    }
+};
+exports.getDonorLocations = getDonorLocations;
 /**
  * GET /api/blood-requests/donors
  * Finds active, available donors matching bloodGroup, city, and state.

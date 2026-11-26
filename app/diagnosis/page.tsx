@@ -178,12 +178,31 @@ export default function DiagnosisPage() {
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col bg-[#fafafa] text-neutral-900">
+    <main className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdf8fa] text-[#262029]">
+      {/* Soft pastel top glow */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[440px] bg-[radial-gradient(ellipse_at_top,rgba(246,226,233,0.75),transparent_70%)]"
+        aria-hidden="true"
+      />
       <Navbar />
 
-      <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 pb-16 pt-24 md:pt-28">
-        {/* Minimal Step Indicator */}
-        <div className="mb-5 flex items-center justify-center gap-2 text-xs font-medium">
+      <section className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 pb-16 pt-24 md:pt-28">
+        {/* Cute Warm Header */}
+        <div className="mb-6 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#edd8e3] bg-white/85 px-3.5 py-1 text-[11px] font-semibold tracking-wide text-[#7a4b61] shadow-2xs">
+            <span className="h-2 w-2 rounded-full bg-[#fae78c] ring-2 ring-[#f3c95f]/40" />
+            MediSure AI Care
+          </span>
+          <h1 className="mt-3 font-serif text-3xl font-normal tracking-tight text-[#231d25] sm:text-4xl">
+            How are you feeling <span className="italic text-[#b4436c]">today?</span>
+          </h1>
+          <p className="mt-1.5 text-xs text-[#6c5b6e] sm:text-sm">
+            Share what&apos;s bothering you and we&apos;ll gently guide you to the right specialist.
+          </p>
+        </div>
+
+        {/* Step Indicator */}
+        <div className="mb-5 flex flex-wrap items-center justify-center gap-2 text-xs font-medium">
           {[
             { id: 'symptoms', label: '1. Symptoms' },
             { id: 'questions', label: '2. Follow-up' },
@@ -193,21 +212,24 @@ export default function DiagnosisPage() {
             return (
               <span
                 key={s.id}
-                className={`rounded-full px-3.5 py-1.5 transition ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 transition ${
                   isCurrent
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-neutral-200/70 text-neutral-600'
+                    ? 'bg-[#262029] text-white shadow-xs'
+                    : 'border border-[#ece0e8] bg-white/80 text-[#6e5e70]'
                 }`}
               >
+                {isCurrent && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#fae78c]" />
+                )}
                 {s.label}
               </span>
             )
           })}
         </div>
 
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs md:p-8">
+        <div className="rounded-3xl border border-[#efe0e9] bg-white/95 p-6 shadow-[0_18px_45px_rgba(88,42,76,0.07)] backdrop-blur-xs md:p-8">
           {error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
               {error}{' '}
               {!user && (
                 <Link href="/auth/login" className="ml-1 font-bold underline">
@@ -222,9 +244,12 @@ export default function DiagnosisPage() {
               <div>
                 <label
                   htmlFor="symptoms-input"
-                  className="mb-2 block text-sm font-semibold text-neutral-900"
+                  className="mb-2 flex items-center justify-between text-sm font-semibold text-[#231d25]"
                 >
-                  Describe your symptoms
+                  <span>Describe your symptoms</span>
+                  <span className="text-[11px] font-normal text-[#8b778e]">
+                    Takes ~30 seconds
+                  </span>
                 </label>
                 <textarea
                   id="symptoms-input"
@@ -233,34 +258,49 @@ export default function DiagnosisPage() {
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   placeholder="Example: Sore throat, mild fever, and ear pain for the last 2 days..."
-                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 p-3.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-[#eadce5] bg-[#fdf9fb] p-4 text-sm text-[#262029] outline-none transition placeholder:text-[#a290a5] focus:border-[#d89db5] focus:bg-white focus:ring-4 focus:ring-[#f6e2e9]/60"
                 />
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-medium text-neutral-500">
-                  Quick examples:
+                <p className="mb-2.5 text-xs font-medium text-[#7b697e]">
+                  Or pick a quick example:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {QUICK_SYMPTOMS.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setSymptoms(item)}
-                      className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs text-neutral-700 transition hover:bg-neutral-100"
-                    >
-                      {item}
-                    </button>
-                  ))}
+                  {QUICK_SYMPTOMS.map((item) => {
+                    const selected = symptoms === item
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setSymptoms(item)}
+                        className={`rounded-full border px-3.5 py-1.5 text-xs transition ${
+                          selected
+                            ? 'border-[#df9ab5] bg-[#fdf0f5] font-medium text-[#8a2d52]'
+                            : 'border-[#eee2e9] bg-[#fcf8fa] text-[#4a3f4d] hover:border-[#e3bfd0] hover:bg-[#fdf2f6]'
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center rounded-xl bg-neutral-900 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-75"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#262029] py-3.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(38,32,41,0.16)] transition hover:bg-[#3a313e] disabled:cursor-not-allowed disabled:opacity-75"
               >
-                {loading ? <StarLoader inline label="Analyzing symptoms..." /> : 'Continue →'}
+                {loading ? (
+                  <StarLoader inline label="Analyzing symptoms..." />
+                ) : (
+                  <>
+                    {/* <span className="text-[#fae78c]" aria-hidden="true">✦</span> */}
+                    <span>Continue</span>
+                    <span aria-hidden="true">→</span>
+                  </>
+                )}
               </button>
             </form>
           )}

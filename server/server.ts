@@ -2,8 +2,6 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db';
-import { seedDefaultDoctors } from './seeds/doctors.seed';
-import { seedDefaultUsers } from './seeds/users.seed';
 import userRoutes from './routes/user.routes';
 import doctorRoutes from './routes/doctor.routes';
 import appointmentRoutes from './routes/appointment.routes';
@@ -49,7 +47,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async (): Promise<void> => {
   await connectDB();
-  await Promise.all([seedDefaultDoctors(), seedDefaultUsers()]);
   app.listen(PORT, () => {
     console.log(`MediSure server running on http://localhost:${PORT}`);
   });

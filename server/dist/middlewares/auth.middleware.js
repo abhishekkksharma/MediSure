@@ -3,12 +3,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireSelfOrPermission = exports.requirePermission = exports.authorizeRoles = exports.authenticate = void 0;
+exports.requireSelfOrPermission = exports.requirePermission = exports.authorizeRoles = exports.authenticate = exports.optionalAuthenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = __importDefault(require("../models/user.model"));
 const getJwtSecret = () => {
     return process.env.JWT_SECRET || 'dev_medisure_jwt_secret_change_in_prod';
 };
+/**
+ * Attaches `req.user` if a valid Bearer JWT is present, without failing if absent.
+ */
+const optionalAuthenticate = async (req, _res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        next();
+        return;
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, getJwtSecret());
+        const user = await user_model_1.default.findById(decoded.id);
+        if (user && user.isActive) {
+            req.user = user;
+        }
+    }
+    catch {
+        // Ignore invalid optional token
+    }
+    next();
+};
+exports.optionalAuthenticate = optionalAuthenticate;
 /**
  * Verifies the Bearer JWT and attaches the active user document to `req.user`.
  */
