@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StarLoader from '@/components/Common/StarLoader'
 import { useUser } from '@/context/userContext'
+import { usePopup } from '@/context/popupContext'
 import { createDoctorAccount } from '@/lib/adminApi'
 import {
   DEPARTMENT_LABELS,
@@ -15,6 +16,7 @@ import {
 
 export default function CreateDoctorForm() {
   const { token } = useUser()
+  const { showError, showSuccess } = usePopup()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -35,8 +37,6 @@ export default function CreateDoctorForm() {
   const [isVerified, setIsVerified] = useState(true)
 
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const toggleDay = (day: Weekday) => {
     setDays((prev) =>
@@ -49,12 +49,10 @@ export default function CreateDoctorForm() {
     if (!token) return
 
     if (days.length === 0) {
-      setError('Select at least one OPD working day.')
+      showError('Select at least one OPD working day.')
       return
     }
 
-    setError('')
-    setSuccess('')
     setSubmitting(true)
 
     try {
@@ -91,12 +89,12 @@ export default function CreateDoctorForm() {
         },
       })
 
-      setSuccess(`Doctor account created for ${name.trim()}.`)
+      showSuccess(`Doctor account created for ${name.trim()}.`)
       setTimeout(() => {
         router.push('/admin')
       }, 900)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create doctor account.')
+      showError(err instanceof Error ? err.message : 'Failed to create doctor account.')
     } finally {
       setSubmitting(false)
     }
@@ -107,18 +105,6 @@ export default function CreateDoctorForm() {
       onSubmit={handleSubmit}
       className="rounded-2xl border border-neutral-200 bg-white p-6 md:p-8"
     >
-      {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
-          {success}
-        </div>
-      )}
-
       {/* Account Details */}
       <div className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">

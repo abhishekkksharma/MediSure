@@ -347,7 +347,7 @@ export default function AppointmentScheduleGrid({
               return (
                 <div
                   key={day.key}
-                  className="flex min-h-[260px] flex-col rounded-xl border border-neutral-100 bg-neutral-50/40 p-2"
+                  className="flex min-h-[260px] min-w-0 flex-col rounded-xl border border-neutral-100 bg-neutral-50/40 p-2"
                 >
                   <div
                     className={`mb-2 rounded-lg px-2 py-1.5 text-center text-xs font-semibold ${
@@ -366,15 +366,15 @@ export default function AppointmentScheduleGrid({
                       dayItems.map((appt) => (
                         <div
                           key={appt._id}
-                          className={`rounded-xl border p-2.5 text-xs ${CARD_TONES[appt.status]}`}
+                          className={`min-w-0 overflow-hidden rounded-xl border p-2.5 text-xs ${CARD_TONES[appt.status]}`}
                         >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="truncate font-semibold">
+                          <div className="flex min-w-0 items-center justify-between gap-1">
+                            <span className="min-w-0 flex-1 truncate font-semibold">
                               {userRole === 'doctor'
                                 ? appt.patient?.name || 'Patient'
                                 : appt.doctor?.name || 'Doctor'}
                             </span>
-                            <span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                            <span className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-bold uppercase">
                               {appt.bookingType === 'ai_diagnosis' ? 'AI' : 'Manual'}
                             </span>
                           </div>
@@ -385,18 +385,18 @@ export default function AppointmentScheduleGrid({
                             {appt.timeSlot}
                           </p>
 
-                          <div className="mt-2 flex items-center justify-between gap-1 border-t border-black/5 pt-1.5">
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-1 border-t border-black/5 pt-1.5">
                             <span className="text-[10px] font-semibold capitalize">
                               {appt.status}
                             </span>
                             {appt.status !== 'cancelled' && appt.status !== 'completed' && (
-                              <div className="flex gap-1">
+                              <div className="flex flex-wrap items-center gap-1">
                                 {(userRole === 'doctor' || userRole === 'admin') &&
                                   appt.status === 'pending' && (
                                     <button
                                       type="button"
                                       onClick={() => onUpdateStatus(appt._id, 'confirmed')}
-                                      className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-2xs hover:bg-emerald-50"
+                                      className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-2xs hover:bg-emerald-50"
                                     >
                                       Confirm
                                     </button>
@@ -404,7 +404,7 @@ export default function AppointmentScheduleGrid({
                                 <button
                                   type="button"
                                   onClick={() => onUpdateStatus(appt._id, 'cancelled')}
-                                  className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 shadow-2xs hover:bg-red-50 hover:text-red-700"
+                                  className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 shadow-2xs hover:bg-red-50 hover:text-red-700"
                                 >
                                   Cancel
                                 </button>
@@ -434,9 +434,9 @@ export default function AppointmentScheduleGrid({
             filteredAppointments.map((appt) => (
               <div
                 key={appt._id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/40 p-4"
+                className="flex min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/40 p-4"
               >
-                <div className="space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-neutral-900">
                       {userRole === 'doctor'
@@ -463,7 +463,7 @@ export default function AppointmentScheduleGrid({
                     · {appt.timeSlot}
                   </p>
                   {appt.aiDiagnosisSummary && (
-                    <p className="max-w-2xl text-xs text-neutral-500">
+                    <p className="max-w-2xl break-words text-xs text-neutral-500">
                       AI Note: {appt.aiDiagnosisSummary}
                     </p>
                   )}

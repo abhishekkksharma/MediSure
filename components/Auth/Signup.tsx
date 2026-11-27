@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '../Header/Navbar'
 import { useUser } from '@/context/userContext'
+import { usePopup } from '@/context/popupContext'
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 const GENDERS = [
@@ -18,6 +19,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 function Signup() {
   const router = useRouter()
   const { loginWithToken } = useUser()
+  const { showError, showSuccess } = usePopup()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,13 +31,9 @@ function Signup() {
   const [stateName, setStateName] = useState('')
   const [isBloodDonorAvailable, setIsBloodDonorAvailable] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
     setLoading(true)
 
     try {
@@ -67,7 +65,7 @@ function Signup() {
 
       if (!res.ok) {
         const detail = Array.isArray(data.errors) ? data.errors.join(', ') : ''
-        setError(detail || data.message || 'Registration failed.')
+        showError(detail || data.message || 'Registration failed.')
         setLoading(false)
         return
       }
@@ -76,19 +74,19 @@ function Signup() {
         await loginWithToken(data.token, data.user || null)
       }
 
-      setSuccess('Patient account created! Redirecting...')
+      showSuccess('Patient account created! Redirecting...')
       setTimeout(() => {
         router.push('/')
       }, 600)
     } catch {
-      setError('Unable to reach the server. Please ensure the backend is running.')
+      showError('Unable to reach the server. Please ensure the backend is running.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="relative flex min-h-screen w-full flex-col bg-[#edb4e1] text-[#262029]">
+    <main className="relative flex min-h-screen w-full flex-col bg-[#F6E2E9] text-[#262029]">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.25),transparent_65%)]"
         aria-hidden="true"
@@ -109,18 +107,6 @@ function Signup() {
               Sign up as a patient to start AI symptom checkups, book doctors, and connect with blood donors.
             </p>
           </div>
-
-          {error && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
-              {success}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

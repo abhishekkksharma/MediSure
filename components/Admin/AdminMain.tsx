@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import StarLoader from '@/components/Common/StarLoader'
 import { UserRole, useUser } from '@/context/userContext'
+import { usePopup } from '@/context/popupContext'
 import {
   deleteUserAccount,
   fetchAdminUsers,
@@ -17,6 +18,7 @@ import UsersTable from './UsersTable'
 
 function AdminDashboardContent() {
   const { user, token } = useUser()
+  const { showError, showSuccess } = usePopup()
   const [users, setUsers] = useState<AdminUserRecord[]>([])
   const [patientTotal, setPatientTotal] = useState(0)
   const [adminTotal, setAdminTotal] = useState(0)
@@ -24,7 +26,6 @@ function AdminDashboardContent() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -48,7 +49,7 @@ function AdminDashboardContent() {
         setAdminTotal(adminsRes.pagination?.total ?? (adminsRes.users || []).length)
       } catch (err) {
         if (active) {
-          setError(err instanceof Error ? err.message : 'Failed to load users.')
+          showError(err instanceof Error ? err.message : 'Failed to load users.')
         }
       } finally {
         if (active) setLoading(false)
@@ -60,7 +61,7 @@ function AdminDashboardContent() {
     return () => {
       active = false
     }
-  }, [token])
+  }, [token, showError])
 
   const summary: AdminStatsSummary = useMemo(() => {
     const doctors = users.filter((u) => u.role === 'doctor')
@@ -89,13 +90,15 @@ function AdminDashboardContent() {
   const handleToggleVerifyDoctor = async (target: AdminUserRecord) => {
     if (!token) return
     setBusyUserId(target._id)
-    setError('')
     try {
       const nextVerified = !target.doctorProfile?.isVerified
       const res = await verifyDoctorAccount(token, target._id, nextVerified)
       setUsers((prev) => prev.map((u) => (u._id === target._id ? res.user : u)))
+      showSuccess(
+        `${target.name} has been ${nextVerified ? 'verified' : 'unverified'}.`
+      )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update verification.')
+      showError(err instanceof Error ? err.message : 'Failed to update verification.')
     } finally {
       setBusyUserId(null)
     }
@@ -104,12 +107,15 @@ function AdminDashboardContent() {
   const handleToggleActive = async (target: AdminUserRecord) => {
     if (!token) return
     setBusyUserId(target._id)
-    setError('')
     try {
-      const res = await updateUserActiveStatus(token, target._id, !target.isActive)
+      const nextActive = !target.isActive
+      const res = await updateUserActiveStatus(token, target._id, nextActive)
       setUsers((prev) => prev.map((u) => (u._id === target._id ? res.user : u)))
+      showSuccess(
+        `${target.name} is now ${nextActive ? 'active' : 'suspended'}.`
+      )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update user status.')
+      showError(err instanceof Error ? err.message : 'Failed to update user status.')
     } finally {
       setBusyUserId(null)
     }
@@ -118,12 +124,12 @@ function AdminDashboardContent() {
   const handleDeleteUser = async (target: AdminUserRecord) => {
     if (!token) return
     setBusyUserId(target._id)
-    setError('')
     try {
       await deleteUserAccount(token, target._id)
       setUsers((prev) => prev.filter((u) => u._id !== target._id))
+      showSuccess(`${target.name} has been removed.`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user.')
+      showError(err instanceof Error ? err.message : 'Failed to delete user.')
     } finally {
       setBusyUserId(null)
     }
@@ -135,12 +141,6 @@ function AdminDashboardContent() {
         title="Users & Doctors"
         subtitle="Manage accounts, verify doctors, and onboard new specialists."
       />
-
-      {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-          {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex justify-center py-16">

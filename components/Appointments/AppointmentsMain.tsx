@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import StarLoader from '@/components/Common/StarLoader'
 import { useUser } from '@/context/userContext'
+import { usePopup } from '@/context/popupContext'
 import {
   AppointmentItem,
   AppointmentStatus,
@@ -17,12 +18,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 export default function AppointmentsMain() {
   const { user, token, loading: authLoading } = useUser()
+  const { showError, showSuccess } = usePopup()
   const [appointments, setAppointments] = useState<AppointmentItem[]>([])
   const [doctors, setDoctors] = useState<AppointmentUserRef[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -44,7 +45,7 @@ export default function AppointmentsMain() {
           setAppointments(apptsData.appointments || [])
         } else {
           const errData = await apptsRes.json()
-          setError(errData.message || 'Failed to load appointments.')
+          showError(errData.message || 'Failed to load appointments.')
         }
 
         if (docsRes.ok) {
@@ -52,7 +53,7 @@ export default function AppointmentsMain() {
           setDoctors(docsData.doctors || [])
         }
       } catch {
-        if (active) setError('Unable to reach the MediSure server.')
+        if (active) showError('Unable to reach the MediSure server.')
       } finally {
         if (active) setLoading(false)
       }
@@ -63,7 +64,7 @@ export default function AppointmentsMain() {
     return () => {
       active = false
     }
-  }, [token])
+  }, [token, showError])
 
   const handleUpdateStatus = async (
     appointmentId: string,
@@ -83,15 +84,16 @@ export default function AppointmentsMain() {
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.message || 'Failed to update appointment status.')
+        showError(data.message || 'Failed to update appointment status.')
         return
       }
 
       setAppointments((prev) =>
         prev.map((item) => (item._id === appointmentId ? data.appointment : item))
       )
+      showSuccess(`Appointment marked as ${status}.`)
     } catch {
-      setError('Unable to update appointment status.')
+      showError('Unable to update appointment status.')
     }
   }
 
@@ -132,12 +134,6 @@ export default function AppointmentsMain() {
 
   return (
     <section className="mx-auto w-full max-w-[1440px] flex-1 px-4 pb-12 pt-24 md:px-10 md:pt-28 lg:px-14">
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-          {error}
-        </div>
-      )}
-
       {loading && appointments.length === 0 ? (
         <div className="rounded-2xl border border-neutral-200 bg-white p-10">
           <StarLoader label="Loading appointments..." size="md" />

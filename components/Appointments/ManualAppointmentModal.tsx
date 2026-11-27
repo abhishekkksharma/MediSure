@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
+import { usePopup } from '@/context/popupContext'
 import { AppointmentItem, AppointmentUserRef } from '@/types/appointment'
 import { DEPARTMENT_LABELS, DEPARTMENT_NAMES, DepartmentName } from '@/types/doctor'
 
@@ -29,6 +30,7 @@ export default function ManualAppointmentModal({
   onClose,
   onCreated,
 }: ManualAppointmentModalProps) {
+  const { showError, showSuccess } = usePopup()
   const [department, setDepartment] = useState<DepartmentName | ''>('')
   const [doctorId, setDoctorId] = useState('')
   const [appointmentDate, setAppointmentDate] = useState(() => {
@@ -39,7 +41,6 @@ export default function ManualAppointmentModal({
   const [symptomsInput, setSymptomsInput] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const filteredDoctors = useMemo(() => {
     if (!department) return doctors
@@ -50,15 +51,14 @@ export default function ManualAppointmentModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
     if (!token) {
-      setError('Please sign in first to book an appointment.')
+      showError('Please sign in first to book an appointment.')
       return
     }
 
     if (!doctorId) {
-      setError('Please select a doctor.')
+      showError('Please select a doctor.')
       return
     }
 
@@ -91,15 +91,16 @@ export default function ManualAppointmentModal({
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.message || 'Failed to book appointment.')
+        showError(data.message || 'Failed to book appointment.')
         setLoading(false)
         return
       }
 
+      showSuccess('Appointment booked successfully.')
       onCreated(data.appointment)
       onClose()
     } catch {
-      setError('Unable to reach the server. Please try again.')
+      showError('Unable to reach the server. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -131,12 +132,6 @@ export default function ManualAppointmentModal({
             ✕
           </button>
         </div>
-
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-700">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

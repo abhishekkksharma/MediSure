@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import Navbar from '../Header/Navbar'
 import StarLoader from '../Common/StarLoader'
 import { useUser } from '@/context/userContext'
+import { usePopup } from '@/context/popupContext'
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 const URGENCIES = [
@@ -30,7 +30,8 @@ interface DonorItem {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 export default function BloodBankMain() {
-  const { user, token } = useUser()
+  const { token } = useUser()
+  const { showError, showSuccess, showWarning } = usePopup()
 
   const [bloodGroup, setBloodGroup] = useState<string>('O+')
   const [city, setCity] = useState('')
@@ -47,12 +48,6 @@ export default function BloodBankMain() {
   const [hasSearched, setHasSearched] = useState(false)
   const [searching, setSearching] = useState(false)
   const [sendingRequest, setSendingRequest] = useState(false)
-  const [error, setError] = useState('')
-  const [requestResult, setRequestResult] = useState<{
-    message: string
-    matchedDonorsCount: number
-    recipients: string[]
-  } | null>(null)
 
   useEffect(() => {
     let active = true
@@ -118,11 +113,9 @@ export default function BloodBankMain() {
 
   const handleSearchDonors = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setRequestResult(null)
 
     if (!stateName) {
-      setError('Please select a state/UT to view matching donors.')
+      showError('Please select a state/UT to view matching donors.')
       return
     }
 
@@ -139,7 +132,7 @@ export default function BloodBankMain() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.message || 'Failed to search donors.')
+        showError(data.message || 'Failed to search donors.')
         setSearching(false)
         return
       }
@@ -147,23 +140,22 @@ export default function BloodBankMain() {
       setDonors(data.donors || [])
       setHasSearched(true)
     } catch {
-      setError('Unable to reach the MediSure server.')
+      showError('Unable to reach the MediSure server.')
     } finally {
       setSearching(false)
     }
   }
 
   const handleSendDonorRequest = async () => {
-    setError('')
-    setRequestResult(null)
-
     if (!stateName) {
-      setError('Please select a state/UT before sending a donor request.')
+      showError('Please select a state/UT before sending a donor request.')
       return
     }
 
     if (!token) {
-      setError('Please sign in to send an emergency blood donor request.')
+      showError('Please sign in to send an emergency blood donor request.', {
+        action: { label: 'Sign in here', href: '/auth/login' },
+      })
       return
     }
 
@@ -189,7 +181,7 @@ export default function BloodBankMain() {
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.message || 'Failed to send donor request.')
+        showError(data.message || 'Failed to send donor request.')
         setSendingRequest(false)
         return
       }
@@ -199,13 +191,28 @@ export default function BloodBankMain() {
         setHasSearched(true)
       }
 
-      setRequestResult({
-        message: data.message || 'Blood donor request sent.',
-        matchedDonorsCount: data.matchedDonorsCount ?? 0,
-        recipients: data.emailDelivery?.recipients || [],
-      })
+      const matchedCount = data.matchedDonorsCount ?? 0
+      const recipients: string[] = data.emailDelivery?.recipients || []
+      const details =
+        recipients.length > 0
+          ? `Matched donors in area: ${matchedCount} · Recipients: ${recipients.join(', ')}`
+          : `Matched donors in area: ${matchedCount}`
+
+      if (data.emailDelivery?.sentCount === 0 && (data.emailDelivery?.failedCount ?? 0) > 0) {
+        showWarning(data.message || 'Could not deliver blood alert emails.', {
+          title: 'Email Delivery Issue',
+          details,
+          duration: 7000,
+        })
+      } else {
+        showSuccess(data.message || 'Blood donor request sent.', {
+          title: 'Blood Alert Sent',
+          details,
+          duration: 7000,
+        })
+      }
     } catch {
-      setError('Unable to reach the MediSure server.')
+      showError('Unable to reach the MediSure server.')
     } finally {
       setSendingRequest(false)
     }
@@ -227,34 +234,11 @@ export default function BloodBankMain() {
           </div>
         </div>
 
-        {error && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-            {error}{' '}
-            {!user && (
-              <Link href="/auth/login" className="ml-1 font-bold underline">
-                Sign in here
-              </Link>
-            )}
-          </div>
-        )}
-
-        {requestResult && (
-          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900">
-            <p className="font-bold">{requestResult.message}</p>
-            <p className="mt-1">
-              Matched donors in area: <strong>{requestResult.matchedDonorsCount}</strong>
-              {requestResult.recipients.length > 0 && (
-                <span> · Recipients: {requestResult.recipients.join(', ')}</span>
-              )}
-            </p>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left: Search & Request Requirements Form */}
           <form
             onSubmit={handleSearchDonors}
-            className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xs lg:col-span-5"
+            className="min-w-0 space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xs lg:col-span-5"
           >
             <h2 className="text-sm font-bold text-neutral-900">
               Requirements &amp; Location
@@ -426,7 +410,7 @@ export default function BloodBankMain() {
           </form>
 
           {/* Right: Matching Donors in City/State */}
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xs lg:col-span-7">
+          <div className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xs lg:col-span-7">
             <div className="mb-4 flex items-center justify-between border-b border-neutral-100 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-neutral-900">
@@ -468,29 +452,37 @@ export default function BloodBankMain() {
                 {donors.map((donor) => (
                   <div
                     key={donor._id}
-                    className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4"
+                    className="min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/50 p-4"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-neutral-900">
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-sm font-semibold text-neutral-900"
+                          title={donor.name}
+                        >
                           {donor.name}
                         </p>
-                        <p className="text-xs text-neutral-500">{donor.email}</p>
+                        <p
+                          className="break-all text-xs text-neutral-500"
+                          title={donor.email}
+                        >
+                          {donor.email}
+                        </p>
                       </div>
-                      <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700 border border-red-200">
+                      <span className="shrink-0 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700">
                         {donor.bloodGroup}
                       </span>
                     </div>
 
                     <div className="mt-3 space-y-1 text-xs text-neutral-600">
-                      <p>
+                      <p className="break-words">
                         <strong>Location:</strong>{' '}
                         {[donor.location?.city, donor.location?.state]
                           .filter(Boolean)
                           .join(', ') || 'Not specified'}
                       </p>
                       {donor.phone && (
-                        <p>
+                        <p className="break-words">
                           <strong>Phone:</strong> {donor.phone}
                         </p>
                       )}
